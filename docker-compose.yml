@@ -1,0 +1,41 @@
+version: '2' 
+
+services:
+  api:
+    ports:
+    - 43011:80
+    - 43014:4001
+    build:
+      context: ./django
+      dockerfile: ./Dockerfile
+    networks:
+    - django-tier
+    volumes:
+    - ./django:/app
+    env_file: common.env
+    command: uwsgi --ini /app/uwsgi.ini
+    # command: python /app/manage.py runserver 0.0.0.0:80
+    # command: gunicorn --bind :80 --workers 2 --worker-class uvicorn.workers.UvicornWorker dj.asgi:application
+    # command: gunicorn dj.asgi:application --bind 0.0.0.0:80
+  nginx:
+    ports:
+    - 43015:80
+    build:
+      context: ./nginx
+      dockerfile: ./Dockerfile
+    volumes:
+    - ./django/sock:/app/sock
+    - ./django/staticfiles:/app/staticfiles
+    - ./django/media:/app/media
+    depends_on:
+      - api
+
+
+volumes:
+  web-db:
+    driver: local
+
+networks:
+  django-tier:
+    driver: bridge
+
